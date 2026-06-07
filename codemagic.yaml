@@ -1,39 +1,70 @@
-# codemagic.yaml — à placer À LA RACINE de ton dépôt GitHub (à côté de package.json)
-# Build iOS d'EVOSWARM (Capacitor) sur un Mac cloud, sans Mac chez toi.
+# codemagic.yaml — A LA RACINE du depot (a cote de package.json)
 #
-# 3 CHOSES À PERSONNALISER (cherche les "<-- A MODIFIER") :
-#   1) bundle_identifier / BUNDLE_ID  -> ton identifiant unique (doit = appId de capacitor.config.json)
-#   2) app_store_connect: <NOM>       -> le nom EXACT de ta clé API ajoutée dans Codemagic
-#   3) email recipients               -> ton email
+# Il y a 2 workflows :
+#   1) ios-test-build  -> A LANCER MAINTENANT (aucun compte Apple requis). Verifie que le projet compile.
+#   2) ios-evoswarm    -> A LANCER QUAND ton compte Apple est valide + cle API ajoutee. Build signe + TestFlight.
 #
-# Avant le 1er build, dans Codemagic : Teams > Integrations > App Store Connect
-#   -> ajoute ta clé API App Store Connect (.p8) et donne-lui un nom (étape 2 ci-dessous).
+# Pour le workflow 1, RIEN a modifier : lance-le tel quel.
+# Pour le workflow 2, modifie les lignes "<-- A MODIFIER".
 
 workflows:
+
+  # =========================================================================
+  # 1) TEST IMMEDIAT — sans signature, sans compte Apple
+  # =========================================================================
+  ios-test-build:
+    name: EVOSWARM iOS - TEST (sans compte Apple)
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    environment:
+      node: 20
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Installer les dependances npm
+        script: npm install
+      - name: Generer le projet iOS (Capacitor)
+        script: |
+          if [ ! -d "ios" ]; then npx cap add ios; fi
+          npx cap sync ios
+      - name: Compiler pour le simulateur (SANS signature)
+        script: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+    artifacts:
+      - /tmp/xcodebuild_logs/*.log
+
+  # =========================================================================
+  # 2) BUILD REEL — signe + envoi App Store / TestFlight
+  # =========================================================================
   ios-evoswarm:
-    name: EVOSWARM iOS
-    instance_type: mac_mini_m2          # Mac dans le cloud
+    name: EVOSWARM iOS - PROD
+    instance_type: mac_mini_m2
     max_build_duration: 60
     integrations:
-      app_store_connect: CODEMAGIC_API_KEY   # <-- A MODIFIER : nom exact de ta clé dans Codemagic
+      app_store_connect: CODEMAGIC_API_KEY   # <-- A MODIFIER : nom exact de ta cle dans Codemagic
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.evoswarm.game   # <-- A MODIFIER (ex: com.tonpseudo.evoswarm)
+        bundle_identifier: com.evoswarm.game   # <-- A MODIFIER (ex: com.mana130.evoswarm) = appId de capacitor.config.json
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        BUNDLE_ID: "com.evoswarm.game"          # <-- A MODIFIER (même valeur que ci-dessus)
-        # APP_STORE_APPLE_ID: 0000000000        # (optionnel) ID numérique de l'app, pour le n° de build auto
+        BUNDLE_ID: "com.evoswarm.game"          # <-- A MODIFIER (meme valeur que ci-dessus)
+        # APP_STORE_APPLE_ID: 0000000000        # (optionnel) ID numerique de l'app
       node: 20
-      xcode: latest                      # Xcode 26+ (exigé par Apple depuis avril 2026) — "latest" prend le bon
+      xcode: latest                      # Xcode 26+ exige par Apple depuis avril 2026 ("latest" prend le bon)
       cocoapods: default
     scripts:
       - name: Installer les dependances npm
         script: npm install
       - name: Generer/synchroniser le projet iOS (Capacitor)
         script: |
-          # le dossier ios/ n'est pas dans le depot : on le cree au build
           if [ ! -d "ios" ]; then npx cap add ios; fi
           npx cap sync ios
       - name: Appliquer la signature aux profils Xcode
@@ -54,7 +85,7 @@ workflows:
       email:
         recipients:
           - ton-email@exemple.com         # <-- A MODIFIER
-      # --- A DECOMMENTER quand l'app existe dans App Store Connect (envoi auto vers TestFlight) ---
+      # --- A DECOMMENTER quand l'app existe dans App Store Connect (envoi auto TestFlight) ---
       # app_store_connect:
       #   auth: integration
       #   submit_to_testflight: true
