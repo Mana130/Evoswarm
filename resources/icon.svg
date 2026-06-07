@@ -1,0 +1,32 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="75%">
+      <stop offset="0%" stop-color="#0c1030"/>
+      <stop offset="100%" stop-color="#05060f"/>
+    </radialGradient>
+    <radialGradient id="cell" cx="42%" cy="38%" r="68%">
+      <stop offset="0%" stop-color="#bdfff6"/>
+      <stop offset="40%" stop-color="#27e6d6"/>
+      <stop offset="78%" stop-color="#9b6cff"/>
+      <stop offset="100%" stop-color="#ff3da6"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="26" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <!-- orbiting prey dots -->
+  <g opacity="0.9">
+    <circle cx="800" cy="300" r="30" fill="#b6ff3c"/>
+    <circle cx="250" cy="720" r="24" fill="#ffd23c"/>
+    <circle cx="790" cy="760" r="20" fill="#ff3da6"/>
+    <circle cx="220" cy="300" r="18" fill="#5cd8ff"/>
+  </g>
+  <!-- main cell -->
+  <g filter="url(#glow)">
+    <circle cx="512" cy="500" r="270" fill="url(#cell)"/>
+    <circle cx="430" cy="410" r="120" fill="#ffffff" opacity="0.22"/>
+  </g>
+  <circle cx="512" cy="500" r="270" fill="none" stroke="#ffffff" stroke-width="14" opacity="0.85"/>
+</svg>

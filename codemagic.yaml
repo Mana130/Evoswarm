@@ -1,0 +1,60 @@
+# codemagic.yaml — à placer À LA RACINE de ton dépôt GitHub (à côté de package.json)
+# Build iOS d'EVOSWARM (Capacitor) sur un Mac cloud, sans Mac chez toi.
+#
+# 3 CHOSES À PERSONNALISER (cherche les "<-- A MODIFIER") :
+#   1) bundle_identifier / BUNDLE_ID  -> ton identifiant unique (doit = appId de capacitor.config.json)
+#   2) app_store_connect: <NOM>       -> le nom EXACT de ta clé API ajoutée dans Codemagic
+#   3) email recipients               -> ton email
+#
+# Avant le 1er build, dans Codemagic : Teams > Integrations > App Store Connect
+#   -> ajoute ta clé API App Store Connect (.p8) et donne-lui un nom (étape 2 ci-dessous).
+
+workflows:
+  ios-evoswarm:
+    name: EVOSWARM iOS
+    instance_type: mac_mini_m2          # Mac dans le cloud
+    max_build_duration: 60
+    integrations:
+      app_store_connect: CODEMAGIC_API_KEY   # <-- A MODIFIER : nom exact de ta clé dans Codemagic
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.evoswarm.game   # <-- A MODIFIER (ex: com.tonpseudo.evoswarm)
+      vars:
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+        BUNDLE_ID: "com.evoswarm.game"          # <-- A MODIFIER (même valeur que ci-dessus)
+        # APP_STORE_APPLE_ID: 0000000000        # (optionnel) ID numérique de l'app, pour le n° de build auto
+      node: 20
+      xcode: latest                      # Xcode 26+ (exigé par Apple depuis avril 2026) — "latest" prend le bon
+      cocoapods: default
+    scripts:
+      - name: Installer les dependances npm
+        script: npm install
+      - name: Generer/synchroniser le projet iOS (Capacitor)
+        script: |
+          # le dossier ios/ n'est pas dans le depot : on le cree au build
+          if [ ! -d "ios" ]; then npx cap add ios; fi
+          npx cap sync ios
+      - name: Appliquer la signature aux profils Xcode
+        script: xcode-project use-profiles
+      - name: Definir le numero de build
+        script: |
+          cd ios/App
+          agvtool new-version -all "$BUILD_NUMBER"
+      - name: Compiler l'IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - ton-email@exemple.com         # <-- A MODIFIER
+      # --- A DECOMMENTER quand l'app existe dans App Store Connect (envoi auto vers TestFlight) ---
+      # app_store_connect:
+      #   auth: integration
+      #   submit_to_testflight: true
