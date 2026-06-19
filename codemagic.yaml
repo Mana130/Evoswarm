@@ -47,15 +47,15 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 60
     integrations:
-      app_store_connect: CODEMAGIC_API_KEY   # <-- A MODIFIER : nom exact de ta cle dans Codemagic
+      app_store_connect: EvoSwarm_key
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.evoswarm.game   # <-- A MODIFIER (ex: com.mana130.evoswarm) = appId de capacitor.config.json
+        bundle_identifier: com.evoswarm.game
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        BUNDLE_ID: "com.evoswarm.game"          # <-- A MODIFIER (meme valeur que ci-dessus)
+        BUNDLE_ID: "com.evoswarm.game"
         # APP_STORE_APPLE_ID: 0000000000        # (optionnel) ID numerique de l'app
       node: 20
       xcode: latest                      # Xcode 26+ exige par Apple depuis avril 2026 ("latest" prend le bon)
@@ -84,8 +84,5 @@ workflows:
     publishing:
       email:
         recipients:
-          - ton-email@exemple.com         # <-- A MODIFIER
-      # --- A DECOMMENTER quand l'app existe dans App Store Connect (envoi auto TestFlight) ---
-      # app_store_connect:
-      #   auth: integration
-      #   submit_to_testflight: true
+          - blas.raymond@outook.fr
+  
