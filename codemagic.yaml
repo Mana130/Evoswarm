@@ -1,11 +1,12 @@
 # codemagic.yaml — A LA RACINE du depot (a cote de package.json)
 #
-# Il y a 2 workflows :
-#   1) ios-test-build  -> A LANCER MAINTENANT (aucun compte Apple requis). Verifie que le projet compile.
-#   2) ios-evoswarm    -> A LANCER QUAND ton compte Apple est valide + cle API ajoutee. Build signe + TestFlight.
+# 2 workflows :
+#   1) ios-test-build  -> test sans compte Apple (build simulateur, non signe)
+#   2) ios-evoswarm    -> PROD : build signe + envoi TestFlight/App Store
 #
-# Pour le workflow 1, RIEN a modifier : lance-le tel quel.
-# Pour le workflow 2, modifie les lignes "<-- A MODIFIER".
+# Dans le workflow PROD, 2 choses a personnaliser (cherche "<-- A MODIFIER") :
+#   - le NOM de ta cle API (le meme que dans Codemagic > Integrations)
+#   - ton EMAIL
 
 workflows:
 
@@ -41,6 +42,7 @@ workflows:
 
   # =========================================================================
   # 2) BUILD REEL — signe + envoi App Store / TestFlight
+  #    (cree automatiquement le certificat + le profil au 1er build)
   # =========================================================================
   ios-evoswarm:
     name: EVOSWARM iOS - PROD
@@ -49,16 +51,12 @@ workflows:
     integrations:
       app_store_connect: EvoSwarm_key
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.evoswarm.game
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         BUNDLE_ID: "com.evoswarm.game"
-        # APP_STORE_APPLE_ID: 0000000000        # (optionnel) ID numerique de l'app
       node: 20
-      xcode: latest                      # Xcode 26+ exige par Apple depuis avril 2026 ("latest" prend le bon)
+      xcode: latest
       cocoapods: default
     scripts:
       - name: Installer les dependances npm
@@ -67,7 +65,16 @@ workflows:
         script: |
           if [ ! -d "ios" ]; then npx cap add ios; fi
           npx cap sync ios
-      - name: Appliquer la signature aux profils Xcode
+      - name: Initialiser le trousseau (keychain)
+        script: keychain initialize
+      - name: Recuperer / CREER le certificat + le profil de signature
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+      - name: Ajouter le certificat au trousseau
+        script: keychain add-certificates
+      - name: Appliquer les profils au projet Xcode
         script: xcode-project use-profiles
       - name: Definir le numero de build
         script: |
@@ -84,5 +91,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - blas.raymond@outook.fr
-  
+          - blas.raymond@outlook.fr
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
