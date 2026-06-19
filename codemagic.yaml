@@ -1,17 +1,17 @@
 # codemagic.yaml — A LA RACINE du depot (a cote de package.json)
 #
-# 2 workflows :
-#   1) ios-test-build  -> test sans compte Apple (build simulateur, non signe)
-#   2) ios-evoswarm    -> PROD : build signe + envoi TestFlight/App Store
+# Avant de lancer le PROD :
+#   - dans Codemagic > Environment variables, ajoute CERTIFICATE_PRIVATE_KEY
+#     (ta cle RSA) dans un groupe nomme "ios_signing", coche Secure.
 #
-# Dans le workflow PROD, 2 choses a personnaliser (cherche "<-- A MODIFIER") :
+# A personnaliser dans le workflow PROD (cherche "<-- A MODIFIER") :
 #   - le NOM de ta cle API (le meme que dans Codemagic > Integrations)
 #   - ton EMAIL
 
 workflows:
 
   # =========================================================================
-  # 1) TEST IMMEDIAT — sans signature, sans compte Apple
+  # 1) TEST — sans signature, sans compte Apple
   # =========================================================================
   ios-test-build:
     name: EVOSWARM iOS - TEST (sans compte Apple)
@@ -42,7 +42,6 @@ workflows:
 
   # =========================================================================
   # 2) BUILD REEL — signe + envoi App Store / TestFlight
-  #    (cree automatiquement le certificat + le profil au 1er build)
   # =========================================================================
   ios-evoswarm:
     name: EVOSWARM iOS - PROD
@@ -51,6 +50,8 @@ workflows:
     integrations:
       app_store_connect: EvoSwarm_key
     environment:
+      groups:
+        - ios_signing                        # contient CERTIFICATE_PRIVATE_KEY (ajoute dans Codemagic)
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
